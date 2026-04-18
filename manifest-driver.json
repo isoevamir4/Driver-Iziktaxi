@@ -1,0 +1,24 @@
+{
+  "name": "Izik Taxi Driver",
+  "short_name": "IzikDriver",
+  "description": "Izik Taxi driver app - go online, receive jobs, track earnings",
+  "start_url": "/driver-app.html",
+  "display": "standalone",
+  "background_color": "#0d0f14",
+  "theme_color": "#0d0f14",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-driver.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-driver.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
