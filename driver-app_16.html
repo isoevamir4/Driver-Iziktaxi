@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="/manifest-driver.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Izik Driver">
+<link rel="apple-touch-icon" href="/icon-driver.png">
+<title>Driver — Izik Taxi</title>
+<style>
+:root{
+  --bg:#0d0f14;--bg1:#13161e;--bg2:#1a1e28;--bg3:#222736;
+  --br:#2e3548;--br2:#3d4660;
+  --tx0:#f0f2f8;--tx1:#b0b8d0;--tx2:#7a85a0;--tx3:#4a5270;
+  --blue:#4e8ef7;--blue2:#2d6be4;
+  --green:#3ec97a;--green-bg:#0d2418;
+  --amber:#f5a623;--amber-bg:#251a06;
+  --red:#f05050;--red-bg:#250d0d;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx0);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{display:flex;flex-direction:column;min-height:100vh}
+.hdr{background:var(--bg1);border-bottom:1px solid var(--br);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr-logo{display:flex;align-items:center;gap:8px}
+.hdr-icon{width:30px;height:30px;background:var(--blue2);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.hdr-name{font-size:15px;font-weight:700;color:var(--tx0)}
+.hdr-status{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px}
+.hs-off{background:var(--bg3);color:var(--tx2);border:1px solid var(--br2)}
+.hs-on{background:var(--green-bg);color:var(--green);border:1px solid #1a4a2e}
+.hs-trip{background:var(--amber-bg);color:var(--amber);border:1px solid #3a2a0a}
+.sdot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.sdot.pulse{animation:pu 1.4s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:0.3}}
+.nav{background:var(--bg1);border-top:1px solid var(--br);display:flex;flex-shrink:0}
+.nb{flex:1;padding:10px 4px 13px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--tx3);font-family:inherit;transition:color 0.12s;position:relative}
+.nb.on{color:var(--blue)}
+.nb svg{width:20px;height:20px}
+.nb span{font-size:9px;font-weight:600}
+.notif-dot{position:absolute;top:8px;right:calc(50% - 13px);width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--bg1);display:none}
+.notif-dot.show{display:block}
+.main{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.screen{display:none}.screen.on{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--bg1);border:1px solid var(--br);border-radius:14px;overflow:hidden}
+.card-hdr{padding:12px 14px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:0.5px}
+.card-body{padding:14px}
+.sel-wrap{position:relative;margin-bottom:12px}
+.sel-wrap select{width:100%;padding:13px 16px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:16px;color:var(--tx0);font-family:inherit;appearance:none;-webkit-appearance:none;outline:none}
+.sel-wrap::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--tx2);pointer-events:none}
+.hero{text-align:center;padding:20px 14px}
+.hero-circle{width:90px;height:90px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;transition:all 0.3s}
+.hc-off{background:var(--bg3);border:2px solid var(--br2)}
+.hc-on{background:var(--green-bg);border:2px solid #1a5038;animation:gg 2s ease-in-out infinite}
+.hc-trip{background:var(--amber-bg);border:2px solid #4a3010;animation:ga 2s ease-in-out infinite}
+@keyframes gg{0%,100%{box-shadow:0 0 0 0 rgba(62,201,122,0.15)}50%{box-shadow:0 0 0 14px rgba(62,201,122,0)}}
+@keyframes ga{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0.15)}50%{box-shadow:0 0 0 14px rgba(245,166,35,0)}}
+.hero-label{font-size:20px;font-weight:700;color:var(--tx0);margin-bottom:5px}
+.hero-sub{font-size:13px;color:var(--tx2);line-height:1.5}
+.coords{display:inline-block;margin-top:8px;padding:3px 10px;background:var(--bg3);border:1px solid var(--br2);border-radius:20px;font-size:10px;color:var(--tx2);font-family:monospace}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg2);border:1px solid var(--br);border-radius:10px;padding:12px;text-align:center}
+.stat-val{font-size:20px;font-weight:700;color:var(--tx0)}
+.stat-lbl{font-size:10px;color:var(--tx2);margin-top:2px}
+.btn{width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn:active{transform:scale(0.97)}
+.btn:disabled{opacity:0.5;cursor:default;transform:none}
+.btn-green{background:var(--green);color:#fff}
+.btn-amber{background:var(--amber);color:#111}
+.btn-red{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue2);color:#fff}
+.btn-outline{background:transparent;color:var(--tx1);border:1.5px solid var(--br2);font-size:14px;padding:12px}
+.job-alert{background:var(--bg2);border:2px solid var(--amber);border-radius:14px;padding:14px;animation:jpulse 1.5s ease-in-out infinite}
+@keyframes jpulse{0%,100%{border-color:var(--amber)}50%{border-color:#5a3a08}}
+.job-badge{font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.job-row{display:flex;gap:9px;margin-bottom:8px;align-items:flex-start}
+.job-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.jf-lbl{font-size:10px;color:var(--tx2);margin-bottom:1px;text-transform:uppercase;letter-spacing:0.3px}
+.jf-val{font-size:13px;color:var(--tx0);font-weight:500;line-height:1.4}
+.divider{height:1px;background:var(--br);margin:10px 0}
+.fare-wrap{position:relative;margin-bottom:10px}
+.fare-pre{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:700;color:var(--tx2)}
+.fare-input{width:100%;padding:13px 13px 13px 34px;background:var(--bg2);border:2px solid var(--br2);border-radius:12px;font-size:24px;font-weight:700;color:var(--tx0);font-family:inherit;outline:none}
+.fare-input:focus{border-color:var(--green)}
+.fare-input::placeholder{color:var(--tx3)}
+.fg{margin-bottom:10px}
+.fg label{display:block;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:500}
+.fg textarea{width:100%;padding:10px 12px;background:var(--bg2);border:1px solid var(--br2);border-radius:9px;font-size:13px;color:var(--tx0);font-family:inherit;outline:none;resize:none;height:60px}
+.preview-box{background:var(--bg2);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:12px}
+.preview-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--br)}
+.preview-row:last-child{border-bottom:none;padding-top:8px;margin-top:2px}
+.preview-lbl{font-size:12px;color:var(--tx2)}
+.preview-val{font-size:13px;font-weight:600;color:var(--tx0)}
+.preview-total-lbl{font-size:13px;font-weight:700;color:var(--tx0)}
+.preview-total-val{font-size:16px;font-weight:700;color:var(--green)}
+.trip-item{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:1px solid var(--br)}
+.trip-item:last-child{border-bottom:none}
+.trip-num{width:26px;height:26px;border-radius:7px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--tx2);flex-shrink:0;margin-top:2px}
+.trip-info{flex:1}
+.trip-route{font-size:12px;color:var(--tx0);font-weight:500}
+.trip-meta{font-size:10px;color:var(--tx2);margin-top:1px}
+.trip-fare{text-align:right}
+.trip-fare-main{font-size:14px;font-weight:700;color:var(--green)}
+.trip-fare-comm{font-size:10px;color:var(--red);margin-top:2px}
+.chat-messages{display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;padding:4px 0;margin-bottom:10px}
+.msg{max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
+.msg-from{background:var(--bg3);color:var(--tx0);border-radius:12px 12px 12px 3px;align-self:flex-start}
+.msg-me{background:var(--blue2);color:#fff;border-radius:12px 12px 3px 12px;align-self:flex-end}
+.msg-time{font-size:10px;opacity:0.55;margin-top:3px}
+.msg-sender{font-size:10px;color:var(--tx2);margin-bottom:3px;font-weight:600}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row input{flex:1;padding:11px 13px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:14px;color:var(--tx0);font-family:inherit;outline:none}
+.chat-input-row input:focus{border-color:var(--blue2)}
+.chat-input-row input::placeholder{color:var(--tx3)}
+.chat-send{padding:11px 16px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* EARNINGS */
+.earn-tabs{display:flex;gap:4px;margin-bottom:14px}
+.etab{flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--br);background:transparent;color:var(--tx2);font-family:inherit;transition:all 0.12s;text-align:center}
+.etab.on{background:var(--blue2);color:#fff;border-color:var(--blue2)}
+.earn-summary{background:var(--bg2);border:1px solid var(--br);border-radius:12px;padding:14px;margin-bottom:10px}
+.earn-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--br)}
+.earn-row:last-child{border-bottom:none}
+.earn-lbl{font-size:13px;color:var(--tx2)}
+.earn-val{font-size:14px;font-weight:600;color:var(--tx0)}
+.earn-highlight{background:var(--green-bg);border:1px solid #1a4a2e;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.earn-highlight-lbl{font-size:13px;color:var(--green);font-weight:600}
+.earn-highlight-val{font-size:22px;font-weight:700;color:var(--green)}
+.comm-alert{background:#1a0808;border:2px solid var(--red);border-radius:12px;padding:16px;margin-bottom:10px;text-align:center}
+.comm-alert-title{font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px}
+.comm-alert-amount{font-size:32px;font-weight:700;color:var(--red);margin-bottom:8px}
+.comm-alert-sub{font-size:12px;color:#a06060;line-height:1.6;margin-bottom:12px}
+.zelle-btn{display:block;width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.week-day-card{background:var(--bg2);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px}
+.week-day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.week-day-name{font-size:13px;font-weight:600;color:var(--tx0)}
+.week-day-total{font-size:14px;font-weight:700;color:var(--green)}
+.week-day-detail{display:flex;gap:12px}
+.week-detail-item{font-size:11px;color:var(--tx2)}
+.week-detail-val{font-weight:600;color:var(--tx1)}
+.gps-error{background:#1a0808;border:1px solid #5a1515;border-radius:12px;padding:14px;margin-top:4px}
+.gps-step{display:flex;gap:9px;align-items:flex-start;margin-top:9px}
+.gps-num{width:20px;height:20px;border-radius:50%;background:#3d1515;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--red);flex-shrink:0;margin-top:1px}
+.otp-boxes{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.otp-box{width:44px;height:52px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:22px;font-weight:700;color:var(--tx0);text-align:center;font-family:inherit;outline:none}
+.otp-box:focus{border-color:var(--blue2)}
+.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:20px;font-size:12px;font-weight:600;display:none;z-index:999;white-space:nowrap;border:1px solid}
+.tok{background:var(--green-bg);color:var(--green);border-color:#1a4a2e}
+.terr{background:var(--red-bg);color:var(--red);border-color:#3d1515}
+.tinfo{background:#1a2540;color:var(--blue);border-color:#2d4a80}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:sp 0.6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#recaptcha-container{display:flex;justify-content:center;margin-bottom:14px}
+.auth-input{width:100%;padding:13px 16px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:17px;color:var(--tx0);font-family:inherit;outline:none;text-align:center;letter-spacing:2px;margin-bottom:10px}
+.auth-input:focus{border-color:var(--blue2)}
+.auth-input::placeholder{color:var(--tx3);letter-spacing:0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3">
+        <circle cx="12" cy="10" r="3"/><path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z"/>
+      </svg>
+    </div>
+    <span class="hdr-name">Izik Taxi</span>
+  </div>
+  <div class="hdr-status hs-off" id="hstatus">
+    <div class="sdot" id="sdot"></div>
+    <span id="stext">Offline</span>
+  </div>
+</div>
+
+<div class="main" id="main">
+
+  <!-- AUTH -->
+  <div class="screen on" id="sc-auth">
+    <div class="card">
+      <div class="card-body">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:38px;margin-bottom:8px">👋</div>
+          <div style="font-size:19px;font-weight:700;color:var(--tx0);margin-bottom:5px">Welcome</div>
+          <div style="font-size:13px;color:var(--tx2)">Sign in to start your shift</div>
+        </div>
+        <div id="auth-step-phone">
+          <input class="auth-input" type="tel" id="phone-input" placeholder="+1 718 555 0000" inputmode="tel"/>
+          <div id="recaptcha-container"></div>
+          <button class="btn btn-blue" id="btn-send-code" onclick="sendCode()">Send verification code</button>
+        </div>
+        <div id="auth-step-otp" style="display:none;text-align:center">
+          <div style="font-size:13px;color:var(--tx2);margin-bottom:14px">Code sent to <strong id="phone-display" style="color:var(--tx0)"></strong></div>
+          <div class="otp-boxes">
+            <input class="otp-box" type="number" maxlength="1" id="otp0" oninput="otpInput(0)" onkeydown="otpKey(event,0)"/>
+            <input class="otp-box" type="number" maxlength="1" id="otp1" oninput="otpInput(1)" onkeydown="otpKey(event,1)"/>
+            <input class="otp-box" type="number" maxlength="1" id="otp2" oninput="otpInput(2)" onkeydown="otpKey(event,2)"/>
+            <input class="otp-box" type="number" maxlength="1" id="otp3" oninput="otpInput(3)" onkeydown="otpKey(event,3)"/>
+            <input class="otp-box" type="number" maxlength="1" id="otp4" oninput="otpInput(4)" onkeydown="otpKey(event,4)"/>
+            <input class="otp-box" type="number" maxlength="1" id="otp5" oninput="otpInput(5)" onkeydown="otpKey(event,5)"/>
+          </div>
+          <button class="btn btn-blue" id="btn-verify" onclick="verifyCode()">Verify</button>
+          <button style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;margin-top:10px;font-family:inherit;text-decoration:underline" onclick="backToPhone()">Use different number</button>
+        </div>
+        <div id="auth-step-profile" style="display:none">
+          <div style="font-size:13px;color:var(--tx2);margin-bottom:14px;text-align:center">One more step — tell us about yourself</div>
+          <div class="fg"><label>Your full name</label><input type="text" id="profile-name" placeholder="John Smith" style="width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:15px;color:var(--tx0);font-family:inherit;outline:none"/></div>
+          <div class="fg"><label>Your vehicle</label><input type="text" id="profile-vehicle" placeholder="Toyota Camry Black" style="width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:15px;color:var(--tx0);font-family:inherit;outline:none"/></div>
+          <div class="fg"><label>Your zone</label><input type="text" id="profile-zone" placeholder="Brooklyn North" style="width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--br2);border-radius:10px;font-size:15px;color:var(--tx0);font-family:inherit;outline:none"/></div>
+          <button class="btn btn-blue" onclick="saveProfile()" style="margin-top:8px">Start driving</button>
+        </div>
+        <div id="auth-blocked" style="display:none;text-align:center">
+          <div style="font-size:40px;margin-bottom:12px">🚫</div>
+          <div style="font-size:16px;font-weight:700;color:var(--red);margin-bottom:8px">Access denied</div>
+          <div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Your number is not approved. Contact your dispatcher to get access.</div>
+          <button class="btn btn-outline" onclick="location.reload()">Try a different number</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="sc-home">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="st-trips">0</div><div class="stat-lbl">Trips today</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--green)" id="st-earn">$0</div><div class="stat-lbl">Earned today</div></div>
+      <div class="stat"><div class="stat-val" id="st-hrs">0h</div><div class="stat-lbl">Online time</div></div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <div class="hero">
+          <div class="hero-circle hc-off" id="hero-circle">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--tx2)">
+              <circle cx="12" cy="10" r="3"/><path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z"/>
+            </svg>
+          </div>
+          <div class="hero-label" id="hero-label">You are offline</div>
+          <div class="hero-sub" id="hero-sub">Tap below to start your shift</div>
+          <div class="coords" id="coords" style="display:none">waiting for GPS...</div>
+        </div>
+        <div style="padding:0 14px 18px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-green" id="btn-online" onclick="goOnline()">Go Online</button>
+          <button class="btn btn-outline" id="btn-offline" style="display:none" onclick="goOffline()">End Shift</button>
+          <button style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px" onclick="signOut()">Sign out</button>
+        </div>
+      </div>
+    </div>
+    <div id="active-job" style="display:none">
+      <div class="job-alert">
+        <div class="job-badge"><div style="width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pu 1s infinite"></div>Active job</div>
+        <div class="job-row"><div class="job-icon" style="background:#1a1400">📞</div><div><div class="jf-lbl">Client phone</div><div class="jf-val" id="job-phone">—</div></div></div>
+        <div class="job-row"><div class="job-icon" style="background:#0a1a08">📍</div><div><div class="jf-lbl">Pickup</div><div class="jf-val" id="job-pickup">—</div></div></div>
+        <div class="job-row"><div class="job-icon" style="background:#0a0a1a">🏁</div><div><div class="jf-lbl">Drop-off</div><div class="jf-val" id="job-dropoff">—</div></div></div>
+        <div class="job-row"><div class="job-icon" style="background:#0a1a0a">💵</div><div><div class="jf-lbl">Agreed fare</div><div class="jf-val" id="job-fare">—</div></div></div>
+        <div class="job-row" id="job-notes-row" style="display:none"><div class="job-icon" style="background:#1a1208">📝</div><div><div class="jf-lbl">Notes</div><div class="jf-val" id="job-notes">—</div></div></div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-blue" onclick="openMaps()" style="font-size:14px;padding:12px">Navigate to Pickup</button>
+          <button class="btn btn-amber" onclick="goScreen('complete')" style="font-size:14px;padding:12px">Trip Complete — Enter Fare</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETE TRIP -->
+  <div class="screen" id="sc-complete">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Complete trip</span></div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.6">Enter fare collected and tolls paid. Commission is 20% of fare minus tolls.</div>
+        <div class="fg"><label>Fare collected ($)</label>
+          <div class="fare-wrap"><span class="fare-pre">$</span><input class="fare-input" type="number" id="fare-val" placeholder="0.00" inputmode="decimal" oninput="updatePreview()"/></div>
+        </div>
+        <div class="fg"><label>Tolls paid ($) — if any</label>
+          <div class="fare-wrap"><span class="fare-pre" style="font-size:18px">$</span><input class="fare-input" type="number" id="toll-val" placeholder="0.00" inputmode="decimal" style="font-size:20px;padding:12px 12px 12px 32px" oninput="updatePreview()"/></div>
+        </div>
+        <div class="preview-box" id="fare-preview" style="display:none">
+          <div class="preview-row"><span class="preview-lbl">Fare collected</span><span class="preview-val" id="prev-fare">$0.00</span></div>
+          <div class="preview-row"><span class="preview-lbl">Tolls paid</span><span class="preview-val" style="color:var(--amber)" id="prev-toll">$0.00</span></div>
+          <div class="preview-row"><span class="preview-lbl">Net (fare − tolls)</span><span class="preview-val" id="prev-net">$0.00</span></div>
+          <div class="preview-row"><span class="preview-lbl">Commission (20%)</span><span class="preview-val" style="color:var(--red)" id="prev-comm">$0.00</span></div>
+          <div class="preview-row"><span class="preview-total-lbl">Your take home</span><span class="preview-total-val" id="prev-take">$0.00</span></div>
+        </div>
+        <div class="fg"><label>Notes (optional)</label>
+          <textarea id="fare-notes" placeholder="Any notes about the trip..."></textarea>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-green" onclick="submitFare()">Submit & Complete Trip</button>
+          <button class="btn btn-outline" onclick="goScreen('home')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRIP LOG -->
+  <div class="screen" id="sc-log">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="log-trips">0</div><div class="stat-lbl">Trips</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--green)" id="log-earn">$0</div><div class="stat-lbl">Earned</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--amber)" id="log-avg">$0</div><div class="stat-lbl">Avg fare</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Today's trips</span><span style="font-size:11px;color:var(--tx2)" id="log-date"></span></div>
+      <div class="card-body"><div id="trip-list"><div style="text-align:center;padding:16px 0;color:var(--tx3);font-size:13px">No trips yet today.</div></div></div>
+    </div>
+  </div>
+
+  <!-- EARNINGS -->
+  <div class="screen" id="sc-earn">
+    <div class="earn-tabs">
+      <button class="etab on" id="et-day" onclick="setEarnTab('day',this)">Daily</button>
+      <button class="etab" id="et-week" onclick="setEarnTab('week',this)">Weekly</button>
+      <button class="etab" id="et-month" onclick="setEarnTab('month',this)">Monthly</button>
+    </div>
+    <div id="earn-content"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="screen" id="sc-chat">
+    <div class="card" style="flex:1">
+      <div class="card-hdr"><span class="card-title">Messages — Dispatch</span><span style="font-size:10px;color:var(--green)">Connected</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column">
+        <div class="chat-messages" id="chat-messages"><div style="text-align:center;padding:20px 0;color:var(--tx3);font-size:12px">No messages yet.</div></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Message dispatch..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+          <button class="chat-send" onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="nav" id="bottom-nav" style="display:none">
+  <button class="nb on" id="nb-home" onclick="goScreen('home',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nb" id="nb-log" onclick="goScreen('log',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Trips</span>
+  </button>
+  <button class="nb" id="nb-earn" onclick="goScreen('earn',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>Earnings</span>
+  </button>
+  <button class="nb" id="nb-chat" onclick="goScreen('chat',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Messages</span>
+    <div class="notif-dot" id="dot-chat"></div>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase compat SDK — same as working dispatch app -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyDyfq2Cmj9LmMpY3FIJ8TuLHiQ7PYBQTys",
+  authDomain: "izik-taxi-service.firebaseapp.com",
+  databaseURL: "https://izik-taxi-service-default-rtdb.firebaseio.com",
+  projectId: "izik-taxi-service",
+  storageBucket: "izik-taxi-service.firebasestorage.app",
+  messagingSenderId: "835965697791",
+  appId: "1:835965697791:web:fa2830a4b400c0803656ca"
+});
+var auth = firebase.auth();
+var db = firebase.database();
+var COMMISSION = 0.20;
+var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let driver = null, isOnline = false, onTrip = false;
+let watchId = null, lastLat = null, lastLng = null;
+let onlineStart = null, onlineTimer = null;
+let todayTrips = [], allTrips = {};
+let activeJob = null, chatMessages = [], confirmationResult = null;
+let curScreen = 'auth', curEarnTab = 'day';
+
+function toast(msg, type='tok', dur=3000) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type; t.style.display='block';
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',dur);
+}
+
+/* ── AUTH ── */
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    const phone = user.phoneNumber;
+    const ws = await get(db.ref('approved_drivers'));
+    const wl = ws.val() || {};
+    const approved = Object.values(wl).map(e=>e.phone);
+    if (approved.length > 0 && !approved.includes(phone)) {
+      document.querySelectorAll('#auth-step-phone,#auth-step-otp,#auth-step-profile').forEach(el=>el.style.display='none');
+      document.getElementById('auth-blocked').style.display='block';
+      await auth.signOut(); return;
+    }
+    const snap = await db.ref('drivers/'+user.uid).once('value');
+    if (snap.exists()) {
+      driver = { uid: user.uid, ...snap.val() };
+      showApp();
+    } else {
+      document.getElementById('auth-step-phone').style.display='none';
+      document.getElementById('auth-step-otp').style.display='none';
+      document.getElementById('auth-step-profile').style.display='block';
+    }
+  } else {
+    document.getElementById('sc-auth').classList.add('on');
+    setupRecaptcha();
+  }
+});
+
+function showApp() {
+  document.getElementById('sc-auth').classList.remove('on');
+  document.getElementById('sc-home').classList.add('on');
+  document.getElementById('bottom-nav').style.display='flex';
+  document.getElementById('log-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  loadAllTrips();
+  startPolling();
+  checkFridayAlert();
+  if (Notification && Notification.permission==='default') Notification.requestPermission();
+}
+
+function setupRecaptcha() {
+  if (window.recaptchaVerifier) return;
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'normal'});
+}
+
+window.sendCode = async function() {
+  const phone=document.getElementById('phone-input').value.trim();
+  if(!phone){toast('Enter your phone number','terr');return;}
+  const btn=document.getElementById('btn-send-code');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Sending...';
+  try {
+    confirmationResult = await auth.signInWithPhoneNumber(phone,window.recaptchaVerifier);
+    document.getElementById('phone-display').textContent=phone;
+    document.getElementById('auth-step-phone').style.display='none';
+    document.getElementById('auth-step-otp').style.display='block';
+    document.getElementById('otp0').focus();
+    toast('Code sent!');
+  } catch(e) {
+    toast('Error: '+e.message,'terr',6000);
+    btn.disabled=false; btn.innerHTML='Send verification code';
+  }
+}
+
+window.otpInput = function(i) {
+  const val=document.getElementById('otp'+i).value;
+  if(val.length>1) document.getElementById('otp'+i).value=val.slice(-1);
+  if(val&&i<5) document.getElementById('otp'+(i+1)).focus();
+  const code=Array.from({length:6},(_,j)=>document.getElementById('otp'+j).value).join('');
+  if(code.length===6) window.verifyCode();
+}
+
+window.otpKey = function(e,i) {
+  if(e.key==='Backspace'&&!document.getElementById('otp'+i).value&&i>0) document.getElementById('otp'+(i-1)).focus();
+}
+
+window.verifyCode = async function() {
+  const code=Array.from({length:6},(_,i)=>document.getElementById('otp'+i).value).join('');
+  if(code.length<6){toast('Enter the full 6-digit code','terr');return;}
+  const btn=document.getElementById('btn-verify');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Verifying...';
+  try { await confirmationResult.confirm(code); toast('Verified!'); }
+  catch(e) { toast('Invalid code','terr'); btn.disabled=false; btn.innerHTML='Verify'; }
+}
+
+window.backToPhone = function() {
+  document.getElementById('auth-step-otp').style.display='none';
+  document.getElementById('auth-step-phone').style.display='block';
+  document.getElementById('btn-send-code').disabled=false;
+  document.getElementById('btn-send-code').innerHTML='Send verification code';
+}
+
+window.saveProfile = async function() {
+  const name=document.getElementById('profile-name').value.trim();
+  const vehicle=document.getElementById('profile-vehicle').value.trim();
+  const zone=document.getElementById('profile-zone').value.trim();
+  if(!name){toast('Enter your name','terr');return;}
+  var user=auth.currentUser;
+  const profile={uid:user.uid,name,vehicle:vehicle||'—',zone:zone||'Unassigned',phone:user.phoneNumber,active:false,onTrip:false,createdAt:new Date().toISOString()};
+  await db.ref('drivers/'+user.uid).set(profile);
+  driver=profile; showApp();
+}
+
+window.signOut = async function() {
+  if(isOnline) await setOfflineInDB();
+  await auth.signOut(); location.reload();
+}
+
+/* ── SCREEN NAV ── */
+window.goScreen = function(name, btn) {
+  curScreen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sc-'+name).classList.add('on');
+  const nb=document.getElementById('nb-'+name);
+  if(nb) nb.classList.add('on');
+  if(name==='log') renderTripLog();
+  if(name==='earn') renderEarnings();
+  if(name==='chat') { renderChat(); document.getElementById('dot-chat').classList.remove('show'); }
+}
+
+/* ── HEADER ── */
+function updateHeader() {
+  const el=document.getElementById('hstatus'),dot=document.getElementById('sdot'),txt=document.getElementById('stext');
+  if(onTrip){el.className='hdr-status hs-trip';dot.className='sdot pulse';txt.textContent='On trip';}
+  else if(isOnline){el.className='hdr-status hs-on';dot.className='sdot pulse';txt.textContent='Online';}
+  else{el.className='hdr-status hs-off';dot.className='sdot';txt.textContent='Offline';}
+}
+
+/* ── GPS ── */
+window.goOnline = function() {
+  if(!driver) return;
+  if(!('geolocation' in navigator)){showGPSError('unsupported');return;}
+  const btn=document.getElementById('btn-online');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Getting GPS...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    isOnline=true; lastLat=pos.coords.latitude; lastLng=pos.coords.longitude;
+    onlineStart=Date.now(); pushLocation(); removeGPSError(); updateUI();
+    watchId=navigator.geolocation.watchPosition(p=>{
+      lastLat=p.coords.latitude; lastLng=p.coords.longitude; pushLocation();
+      const c=document.getElementById('coords'); if(c) c.textContent=lastLat.toFixed(5)+', '+lastLng.toFixed(5);
+    },null,{enableHighAccuracy:true,maximumAge:8000});
+    onlineTimer=setInterval(()=>{
+      if(!onlineStart) return;
+      document.getElementById('st-hrs').textContent=((Date.now()-onlineStart)/3600000).toFixed(1)+'h';
+    },30000);
+    toast(driver.name+' — you are online');
+  },err=>{
+    btn.disabled=false; btn.innerHTML='Go Online';
+    showGPSError(err.code===1?'denied':'unavailable');
+  },{enableHighAccuracy:true,timeout:12000});
+}
+
+window.goOffline = function() {
+  if(onTrip){toast('Complete your trip first','terr');return;}
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+  clearInterval(onlineTimer); isOnline=false; onlineStart=null;
+  setOfflineInDB(); updateUI(); toast('You are offline. Good work!');
+}
+
+function updateUI() {
+  const circle=document.getElementById('hero-circle'),label=document.getElementById('hero-label'),sub=document.getElementById('hero-sub'),coords=document.getElementById('coords');
+  const btnOn=document.getElementById('btn-online'),btnOff=document.getElementById('btn-offline');
+  updateHeader();
+  if(onTrip){
+    circle.className='hero-circle hc-trip'; label.textContent='On a trip'; sub.textContent='Complete at drop-off.';
+    coords.style.display='none'; btnOn.style.display='none'; btnOff.style.display='none';
+    document.getElementById('active-job').style.display='block';
+  } else if(isOnline){
+    circle.className='hero-circle hc-on'; label.textContent='You are online'; sub.textContent='Location is live. Waiting for a job.';
+    coords.style.display='inline-block';
+    if(lastLat) coords.textContent=lastLat.toFixed(5)+', '+lastLng.toFixed(5);
+    btnOn.style.display='none'; btnOff.style.display='flex';
+    document.getElementById('active-job').style.display='none';
+  } else {
+    circle.className='hero-circle hc-off'; label.textContent='You are offline'; sub.textContent='Tap below to start your shift.';
+    coords.style.display='none'; btnOn.style.display='flex'; btnOn.disabled=false; btnOn.innerHTML='Go Online';
+    btnOff.style.display='none'; document.getElementById('active-job').style.display='none';
+  }
+  updateStats();
+}
+
+function updateStats() {
+  const total=todayTrips.reduce((s,t)=>s+t.fare,0);
+  const avg=todayTrips.length?Math.round(total/todayTrips.length):0;
+  document.getElementById('st-trips').textContent=todayTrips.length;
+  document.getElementById('st-earn').textContent='$'+total.toFixed(0);
+  document.getElementById('log-trips').textContent=todayTrips.length;
+  document.getElementById('log-earn').textContent='$'+total.toFixed(0);
+  document.getElementById('log-avg').textContent='$'+avg;
+}
+
+/* ── FIREBASE ── */
+async function pushLocation() {
+  if(!driver) return;
+  try { await update(db.ref('drivers/'+driver.uid),{lat:lastLat,lng:lastLng,timestamp:Date.now(),active:true,onTrip,name:driver.name,phone:driver.phone,vehicle:driver.vehicle,zone:driver.zone}); } catch(e){}
+}
+async function setOfflineInDB() {
+  if(!driver) return;
+  try { await update(db.ref('drivers/'+driver.uid),{active:false,onTrip:false,timestamp:Date.now()}); } catch(e){}
+}
+
+/* ── POLLING ── */
+function startPolling(){ setInterval(poll,5000); poll(); }
+async function poll() {
+  if(!driver) return;
+  try {
+    const snap=await get(db.ref('jobs/'+driver.uid));
+    const job=snap.val();
+    if(job&&job.status==='pending'&&!onTrip) receiveJob(job);
+    const ms=await get(db.ref('messages/'+driver.uid));
+    const msgs=ms.val();
+    if(msgs){
+      const arr=Object.values(msgs).sort((a,b)=>a.ts-b.ts);
+      if(arr.length>chatMessages.length){
+        const newM=arr.slice(chatMessages.length);
+        chatMessages=arr;
+        newM.forEach(m=>{
+          if(m.from==='dispatch'){
+            document.getElementById('dot-chat').classList.add('show');
+            if(curScreen!=='chat') toast('Dispatch: '+m.text.slice(0,40),'tinfo',4000);
+          }
+        });
+        if(curScreen==='chat') renderChat();
+      }
+    }
+  } catch(e){}
+}
+
+function receiveJob(job) {
+  activeJob=job; onTrip=true;
+  document.getElementById('job-phone').textContent=job.phone||'—';
+  document.getElementById('job-pickup').textContent=job.pickup||'—';
+  document.getElementById('job-dropoff').textContent=job.dropoff||'—';
+  document.getElementById('job-fare').textContent=job.fare?'$'+job.fare:'—';
+  const nr=document.getElementById('job-notes-row');
+  if(job.notes){nr.style.display='flex';document.getElementById('job-notes').textContent=job.notes;}else nr.style.display='none';
+  updateUI(); pushLocation();
+  update(db.ref('jobs/'+driver.uid),{status:'accepted'});
+  toast('New job received!','tinfo',5000);
+}
+
+window.openMaps = function() {
+  if(!activeJob) return;
+  const addr=encodeURIComponent(activeJob.pickup);
+  const url=lastLat?`https://www.google.com/maps/dir/${lastLat},${lastLng}/${addr}`:`https://maps.google.com/?q=${addr}`;
+  window.open(url,'_blank');
+}
+
+/* ── FARE PREVIEW ── */
+window.updatePreview = function() {
+  const fare=parseFloat(document.getElementById('fare-val').value)||0;
+  const toll=parseFloat(document.getElementById('toll-val').value)||0;
+  const preview=document.getElementById('fare-preview');
+  if(fare<=0){preview.style.display='none';return;}
+  preview.style.display='block';
+  const net=Math.max(0,fare-toll);
+  const comm=net*COMMISSION;
+  const take=fare-comm;
+  document.getElementById('prev-fare').textContent='$'+fare.toFixed(2);
+  document.getElementById('prev-toll').textContent='$'+toll.toFixed(2);
+  document.getElementById('prev-net').textContent='$'+net.toFixed(2);
+  document.getElementById('prev-comm').textContent='$'+comm.toFixed(2);
+  document.getElementById('prev-take').textContent='$'+take.toFixed(2);
+}
+
+/* ── SUBMIT FARE ── */
+window.submitFare = async function() {
+  const fare=parseFloat(document.getElementById('fare-val').value);
+  const toll=parseFloat(document.getElementById('toll-val').value)||0;
+  if(!fare||fare<=0){toast('Enter the collected amount','terr');return;}
+  const net=Math.max(0,fare-toll);
+  const commission=parseFloat((net*COMMISSION).toFixed(2));
+  const takeHome=parseFloat((fare-commission).toFixed(2));
+  const notes=document.getElementById('fare-notes').value.trim();
+  const trip={
+    id:Date.now().toString(),
+    phone:activeJob?.phone||'—',
+    pickup:activeJob?.pickup||'—',
+    dropoff:activeJob?.dropoff||'—',
+    fare,toll,net,commission,takeHome,notes,
+    completedAt:new Date().toISOString(),
+    date:new Date().toDateString(),
+    driverName:driver.name,
+    driverId:driver.uid
+  };
+  todayTrips.push(trip);
+  saveLocalTrips();
+  // Save to allTrips by date
+  const dateKey=new Date().toDateString().replace(/ /g,'_');
+  if(!allTrips[dateKey]) allTrips[dateKey]=[];
+  allTrips[dateKey].push(trip);
+  localStorage.setItem('allTrips_'+driver.uid,JSON.stringify(allTrips));
+  updateStats();
+  try {
+    await set(db.ref('trips/'+driver.uid+'/'+trip.id),trip);
+    await update(db.ref('drivers/'+driver.uid),{onTrip:false,active:true,timestamp:Date.now()});
+    await set(db.ref('jobs/'+driver.uid),null);
+  } catch(e){}
+  activeJob=null; onTrip=false;
+  document.getElementById('fare-val').value='';
+  document.getElementById('toll-val').value='';
+  document.getElementById('fare-notes').value='';
+  document.getElementById('fare-preview').style.display='none';
+  updateUI(); window.goScreen('home');
+  toast('Trip done! Take home: $'+takeHome.toFixed(2));
+}
+
+/* ── TRIP LOG ── */
+function loadLocalTrips() {
+  const key='trips_'+(driver?.uid)+'_'+new Date().toDateString();
+  try{todayTrips=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){todayTrips=[];}
+  updateStats();
+}
+function loadAllTrips() {
+  loadLocalTrips();
+  try{allTrips=JSON.parse(localStorage.getItem('allTrips_'+driver?.uid)||'{}');}catch(e){allTrips={};}
+  // Make sure today is in allTrips
+  const dk=new Date().toDateString().replace(/ /g,'_');
+  allTrips[dk]=todayTrips;
+}
+function saveLocalTrips() {
+  const key='trips_'+(driver?.uid)+'_'+new Date().toDateString();
+  localStorage.setItem(key,JSON.stringify(todayTrips));
+}
+function renderTripLog() {
+  const el=document.getElementById('trip-list');
+  if(!todayTrips.length){el.innerHTML='<div style="text-align:center;padding:16px 0;color:var(--tx3);font-size:13px">No trips yet today.</div>';return;}
+  el.innerHTML=[...todayTrips].reverse().map((t,i)=>{
+    const time=new Date(t.completedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return `<div class="trip-item">
+      <div class="trip-num">${todayTrips.length-i}</div>
+      <div class="trip-info">
+        <div class="trip-route">${t.pickup} → ${t.dropoff}</div>
+        <div class="trip-meta">${t.phone} · ${time}${t.toll>0?' · Toll: $'+t.toll.toFixed(2):''}${t.notes?' · '+t.notes:''}</div>
+      </div>
+      <div class="trip-fare">
+        <div class="trip-fare-main">$${t.fare.toFixed(2)}</div>
+        <div class="trip-fare-comm">-$${t.commission.toFixed(2)} comm</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── EARNINGS ── */
+window.setEarnTab = function(t, el) {
+  curEarnTab=t;
+  document.querySelectorAll('.etab').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  renderEarnings();
+}
+
+function renderEarnings() {
+  const el=document.getElementById('earn-content');
+  if(curEarnTab==='day') el.innerHTML=renderDailyEarnings();
+  else if(curEarnTab==='week') el.innerHTML=renderWeeklyEarnings();
+  else el.innerHTML=renderMonthlyEarnings();
+}
+
+function renderDailyEarnings() {
+  const trips=todayTrips;
+  const totalFare=trips.reduce((s,t)=>s+t.fare,0);
+  const totalToll=trips.reduce((s,t)=>s+(t.toll||0),0);
+  const totalNet=trips.reduce((s,t)=>s+t.net,0);
+  const totalComm=trips.reduce((s,t)=>s+t.commission,0);
+  const totalTake=trips.reduce((s,t)=>s+t.takeHome,0);
+  return `
+    <div class="earn-highlight">
+      <div>
+        <div class="earn-highlight-lbl">Your take home today</div>
+        <div style="font-size:11px;color:#3a9060;margin-top:2px">${trips.length} trips completed</div>
+      </div>
+      <div class="earn-highlight-val">$${totalTake.toFixed(2)}</div>
+    </div>
+    <div class="earn-summary">
+      <div class="earn-row"><span class="earn-lbl">Total fares collected</span><span class="earn-val">$${totalFare.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Tolls paid</span><span class="earn-val" style="color:var(--amber)">$${totalToll.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Net (fares − tolls)</span><span class="earn-val">$${totalNet.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Commission owed (20%)</span><span class="earn-val" style="color:var(--red)">$${totalComm.toFixed(2)}</span></div>
+      <div class="earn-row" style="padding-top:10px"><span class="earn-lbl" style="font-weight:700;color:var(--tx0)">Your take home</span><span class="earn-val" style="color:var(--green);font-size:18px">$${totalTake.toFixed(2)}</span></div>
+    </div>
+    ${trips.length===0?'<div style="text-align:center;padding:20px;color:var(--tx3);font-size:13px">No trips today yet.</div>':''}`;
+}
+
+function renderWeeklyEarnings() {
+  const today=new Date();
+  const dayOfWeek=today.getDay(); // 0=Sun, 5=Fri
+  const monday=new Date(today); monday.setDate(today.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); monday.setHours(0,0,0,0);
+  let weekFare=0,weekToll=0,weekNet=0,weekComm=0,weekTake=0;
+  let daysHtml='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const dk=d.toDateString().replace(/ /g,'_');
+    const dayTrips=allTrips[dk]||[];
+    const df=dayTrips.reduce((s,t)=>s+t.fare,0);
+    const dt=dayTrips.reduce((s,t)=>s+(t.toll||0),0);
+    const dn=dayTrips.reduce((s,t)=>s+t.net,0);
+    const dc=dayTrips.reduce((s,t)=>s+t.commission,0);
+    const dth=dayTrips.reduce((s,t)=>s+t.takeHome,0);
+    weekFare+=df; weekToll+=dt; weekNet+=dn; weekComm+=dc; weekTake+=dth;
+    const isToday=d.toDateString()===today.toDateString();
+    const isFuture=d>today;
+    if(!isFuture||dayTrips.length>0){
+      daysHtml+=`<div class="week-day-card" style="${isToday?'border-color:var(--blue)':''}">
+        <div class="week-day-header">
+          <span class="week-day-name" style="${isToday?'color:var(--blue)':''}">${DAYS[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}${isToday?' (today)':''}</span>
+          <span class="week-day-total">${dayTrips.length>0?'$'+dth.toFixed(2):'—'}</span>
+        </div>
+        ${dayTrips.length>0?`<div class="week-day-detail">
+          <div class="week-detail-item">Fare: <span class="week-detail-val">$${df.toFixed(2)}</span></div>
+          <div class="week-detail-item">Tolls: <span class="week-detail-val" style="color:var(--amber)">$${dt.toFixed(2)}</span></div>
+          <div class="week-detail-item">Comm: <span class="week-detail-val" style="color:var(--red)">$${dc.toFixed(2)}</span></div>
+          <div class="week-detail-item">Trips: <span class="week-detail-val">${dayTrips.length}</span></div>
+        </div>`:'<div style="font-size:11px;color:var(--tx3)">No trips</div>'}
+      </div>`;
+    }
+  }
+  // Friday commission alert
+  const isFriday=today.getDay()===5;
+  const fridayAlert=isFriday&&weekComm>0?`
+    <div class="comm-alert">
+      <div class="comm-alert-title">🔔 Friday — Commission Due</div>
+      <div class="comm-alert-amount">$${weekComm.toFixed(2)}</div>
+      <div class="comm-alert-sub">This is your weekly commission owed to Izik Taxi.<br>Please Zelle this amount today.</div>
+      <button class="zelle-btn" onclick="window.open('https://www.zellepay.com','_blank')">Open Zelle</button>
+    </div>`:'';
+  const upcomingFriday=isFriday?'today':['in '+(5-today.getDay())+' days','in '+(6-today.getDay())+' days','in '+(7-today.getDay())+' days','in '+(8-today.getDay())+' days','tomorrow','today','in 6 days'][today.getDay()];
+  return `
+    ${fridayAlert}
+    <div class="earn-highlight">
+      <div>
+        <div class="earn-highlight-lbl">Week take home</div>
+        <div style="font-size:11px;color:#3a9060;margin-top:2px">Commission due ${upcomingFriday}</div>
+      </div>
+      <div class="earn-highlight-val">$${weekTake.toFixed(2)}</div>
+    </div>
+    <div class="earn-summary">
+      <div class="earn-row"><span class="earn-lbl">Total fares</span><span class="earn-val">$${weekFare.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Total tolls</span><span class="earn-val" style="color:var(--amber)">$${weekToll.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Weekly commission (20%)</span><span class="earn-val" style="color:var(--red)">$${weekComm.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl" style="font-weight:700;color:var(--tx0)">Your take home</span><span class="earn-val" style="color:var(--green);font-size:18px">$${weekTake.toFixed(2)}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;font-weight:600">This week's breakdown:</div>
+    ${daysHtml||'<div style="text-align:center;padding:16px;color:var(--tx3);font-size:13px">No trips this week yet.</div>'}`;
+}
+
+function renderMonthlyEarnings() {
+  const today=new Date();
+  let monthFare=0,monthToll=0,monthComm=0,monthTake=0,monthTrips=0;
+  Object.entries(allTrips).forEach(([dk,trips])=>{
+    const d=new Date(dk.replace(/_/g,' '));
+    if(d.getMonth()===today.getMonth()&&d.getFullYear()===today.getFullYear()){
+      trips.forEach(t=>{monthFare+=t.fare;monthToll+=(t.toll||0);monthComm+=t.commission;monthTake+=t.takeHome;monthTrips++;});
+    }
+  });
+  return `
+    <div class="earn-highlight">
+      <div>
+        <div class="earn-highlight-lbl">${today.toLocaleDateString('en-US',{month:'long',year:'numeric'})} take home</div>
+        <div style="font-size:11px;color:#3a9060;margin-top:2px">${monthTrips} trips this month</div>
+      </div>
+      <div class="earn-highlight-val">$${monthTake.toFixed(2)}</div>
+    </div>
+    <div class="earn-summary">
+      <div class="earn-row"><span class="earn-lbl">Total fares collected</span><span class="earn-val">$${monthFare.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Total tolls paid</span><span class="earn-val" style="color:var(--amber)">$${monthToll.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl">Total commission (20%)</span><span class="earn-val" style="color:var(--red)">$${monthComm.toFixed(2)}</span></div>
+      <div class="earn-row"><span class="earn-lbl" style="font-weight:700;color:var(--tx0)">Your take home</span><span class="earn-val" style="color:var(--green);font-size:18px">$${monthTake.toFixed(2)}</span></div>
+    </div>`;
+}
+
+function checkFridayAlert() {
+  if(new Date().getDay()!==5) return;
+  // Calculate this week's commission
+  const today=new Date();
+  const dayOfWeek=today.getDay();
+  const monday=new Date(today); monday.setDate(today.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); monday.setHours(0,0,0,0);
+  let weekComm=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const dk=d.toDateString().replace(/ /g,'_');
+    const dayTrips=allTrips[dk]||[];
+    weekComm+=dayTrips.reduce((s,t)=>s+t.commission,0);
+  }
+  if(weekComm>0) toast('Friday reminder: $'+weekComm.toFixed(2)+' commission due today!','terr',8000);
+}
+
+/* ── CHAT ── */
+window.sendMsg = async function() {
+  const input=document.getElementById('chat-input');
+<script>
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw-driver.js');
+  });
+}
+</script>
+</body>
+</html>
